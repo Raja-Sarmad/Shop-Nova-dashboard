@@ -210,7 +210,7 @@ export default function ProductsPage() {
 
         <div className="overflow-x-auto soft-card anim-fade-up" style={{ animationDelay: "140ms" }}>
           <table className="min-w-full text-left text-sm">
-            <thead className="border-b border-line text-[11px] tracking-[0.16em] uppercase text-muted">
+            <thead className="table-head border-b border-line">
               <tr>
                 <th className="px-4 py-3">Product</th>
                 <th className="px-4 py-3">Category</th>

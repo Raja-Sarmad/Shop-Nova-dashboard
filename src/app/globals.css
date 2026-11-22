@@ -4,9 +4,9 @@
   --bg: #efeae2;
   --canvas: #f7f3ed;
   --panel: #ffffff;
-  --ink: #2c2420;
-  --muted: #8a8178;
-  --line: #e6dfd5;
+  --ink: #1f1916;
+  --muted: #5c554e;
+  --line: #e0d8cd;
   --teal: #3f9f88;
   --teal-dark: #2f7d6a;
   --accent: #b08d57;
@@ -34,10 +34,31 @@ body {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 .font-display {
   font-family: var(--font-display), Georgia, serif;
+  letter-spacing: -0.02em;
+}
+
+.metric {
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.table-head {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
 * {

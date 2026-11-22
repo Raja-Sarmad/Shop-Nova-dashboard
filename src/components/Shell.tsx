@@ -92,8 +92,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
               {firstName.slice(0, 1).toUpperCase()}
             </div>
             <div className="hidden min-w-0 sm:block">
-              <p className="truncate text-sm font-medium">Welcome, {firstName}</p>
-              <p className="truncate text-[11px] text-white/45">Shop Nova Admin</p>
+              <p className="truncate text-base font-semibold">Welcome, {firstName}</p>
+              <p className="truncate text-sm text-white/70">Shop Nova Admin</p>
             </div>
           </div>
 
@@ -137,10 +137,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
         <div className="min-h-[calc(100vh-8rem)] rounded-[36px] bg-canvas p-4 pb-28 shadow-[0_30px_80px_rgba(44,36,32,0.08)] sm:p-6 lg:p-8">
           {pathname === "/" ? (
             <div className="mb-6 hidden anim-fade-up lg:block">
-              <h1 className="font-display text-4xl tracking-tight text-ink">
+              <h1 className="font-display text-4xl tracking-tight text-ink lg:text-5xl">
                 {greeting()}, {firstName}
               </h1>
-              <p className="mt-2 max-w-xl text-sm text-muted">
+              <p className="mt-3 max-w-xl text-base leading-7 text-muted">
                 Stay on top of sales, monitor inventory, and track every order.
               </p>
             </div>
@@ -165,10 +165,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  "nav-pill rounded-full px-3 py-2.5 text-[11px] font-medium tracking-wide sm:px-4 sm:text-xs",
+                  "nav-pill rounded-full px-3.5 py-2.5 text-sm font-semibold tracking-wide sm:px-5 sm:text-[15px]",
                   active
                     ? "bg-white text-ink shadow"
-                    : "text-white/55 hover:text-white",
+                    : "text-white/70 hover:text-white",
                 )}
               >
                 {link.label}
@@ -177,10 +177,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
           })}
           <Link
             href="/products"
-            className="btn-press ml-1 flex h-9 w-9 items-center justify-center rounded-full bg-teal text-white"
+            className="btn-press ml-1 flex h-10 w-10 items-center justify-center rounded-full bg-teal text-white"
             title="Add product"
           >
-            <Plus size={16} />
+            <Plus size={18} />
           </Link>
         </nav>
       </Motion>

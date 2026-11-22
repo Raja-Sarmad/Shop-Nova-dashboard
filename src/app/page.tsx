@@ -40,10 +40,10 @@ type Product = {
 };
 
 const statusTone: Record<string, string> = {
-  processing: "bg-amber-100 text-amber-800",
-  shipped: "bg-sky-100 text-sky-800",
+  processing: "bg-amber-100 text-amber-900",
+  shipped: "bg-sky-100 text-sky-900",
   delivered: "bg-teal/15 text-teal-dark",
-  cancelled: "bg-rose-100 text-rose-700",
+  cancelled: "bg-rose-100 text-rose-800",
 };
 
 export default function OverviewPage() {
@@ -96,34 +96,37 @@ export default function OverviewPage() {
     <RequireAuth>
       <div className="space-y-5 lg:space-y-6">
         <div className="anim-fade-up lg:hidden">
-          <h1 className="font-display text-3xl text-ink">Dashboard</h1>
-          <p className="mt-1 text-sm text-muted">Sales · stock · customers</p>
+          <h1 className="font-display text-4xl text-ink">Dashboard</h1>
+          <p className="mt-1.5 text-base text-muted">Sales · stock · customers</p>
         </div>
 
         {error ? (
-          <div className="soft-card anim-pop border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          <div className="soft-card anim-pop border border-rose-200 bg-rose-50 px-4 py-3 text-base text-rose-800">
             {error}
           </div>
         ) : null}
 
         <Stagger className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
           <section className="soft-card p-6 sm:p-7">
-            <p className="text-sm text-muted">Total revenue</p>
-            <div className="mt-2 flex flex-wrap items-end gap-3">
-              <p className="font-display text-4xl tracking-tight sm:text-5xl">
+            <p className="text-base font-medium text-muted">Total revenue</p>
+            <div className="mt-3 flex flex-wrap items-end gap-3">
+              <p className="metric text-4xl text-ink sm:text-5xl">
                 {stats ? formatPrice(stats.revenue) : "—"}
               </p>
-              <span className="anim-pulse mb-1 inline-flex items-center gap-1 rounded-full bg-teal/15 px-2.5 py-1 text-xs font-medium text-teal-dark">
-                <ArrowUpRight size={13} /> Live store
+              <span className="anim-pulse mb-1 inline-flex items-center gap-1.5 rounded-full bg-teal/15 px-3 py-1.5 text-sm font-semibold text-teal-dark">
+                <ArrowUpRight size={15} /> Live store
               </span>
             </div>
-            <div className="mt-6 flex flex-wrap gap-2">
-              <Link href="/orders" className="btn-press rounded-full bg-ink px-5 py-2.5 text-sm text-white">
+            <div className="mt-7 flex flex-wrap gap-2.5">
+              <Link
+                href="/orders"
+                className="btn-press rounded-full bg-ink px-5 py-3 text-sm font-semibold text-white"
+              >
                 View orders
               </Link>
               <Link
                 href="/products"
-                className="btn-press rounded-full bg-white px-5 py-2.5 text-sm text-ink shadow-[0_0_0_1px_rgba(44,36,32,0.08)]"
+                className="btn-press rounded-full bg-white px-5 py-3 text-sm font-semibold text-ink shadow-[0_0_0_1px_rgba(44,36,32,0.1)]"
               >
                 Manage catalog
               </Link>
@@ -134,9 +137,9 @@ export default function OverviewPage() {
                 ["Footwear", "Sneakers & loafers"],
                 ["Cloudinary", "Product images"],
               ].map(([title, sub]) => (
-                <div key={title} className="soft-inset rounded-2xl px-4 py-3">
-                  <p className="text-sm font-medium">{title}</p>
-                  <p className="text-xs text-muted">{sub}</p>
+                <div key={title} className="soft-inset rounded-2xl px-4 py-3.5">
+                  <p className="text-base font-semibold text-ink">{title}</p>
+                  <p className="mt-1 text-sm text-muted">{sub}</p>
                 </div>
               ))}
             </div>
@@ -145,10 +148,10 @@ export default function OverviewPage() {
           <section className="soft-card p-6 sm:p-7">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-sm text-muted">Sales pulse</p>
-                <h2 className="mt-1 font-display text-2xl">Orders & demand</h2>
+                <p className="text-base font-medium text-muted">Sales pulse</p>
+                <h2 className="mt-1 font-display text-3xl text-ink">Orders & demand</h2>
               </div>
-              <span className="rounded-full bg-[#f3eee7] px-3 py-1 text-[11px] text-muted">
+              <span className="rounded-full bg-[#efe8de] px-3 py-1.5 text-sm font-medium text-muted">
                 6 mo
               </span>
             </div>
@@ -171,64 +174,63 @@ export default function OverviewPage() {
                       }}
                     />
                   </div>
-                  <span className="text-[10px] text-muted">{bar.label}</span>
+                  <span className="text-xs font-medium text-muted">{bar.label}</span>
                 </div>
               ))}
             </div>
-            <div className="mt-4 flex gap-4 text-xs text-muted">
-              <span className="inline-flex items-center gap-1.5">
-                <i className="h-2.5 w-2.5 rounded-sm bg-ink" /> Orders
+            <div className="mt-5 flex gap-5 text-sm font-medium text-muted">
+              <span className="inline-flex items-center gap-2">
+                <i className="h-3 w-3 rounded-sm bg-ink" /> Orders
               </span>
-              <span className="inline-flex items-center gap-1.5">
-                <i className="h-2.5 w-2.5 rounded-sm bg-teal" /> Catalog activity
+              <span className="inline-flex items-center gap-2">
+                <i className="h-3 w-3 rounded-sm bg-teal" /> Catalog activity
               </span>
             </div>
           </section>
         </Stagger>
 
         <Stagger className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="soft-card bg-teal p-5 text-white shadow-[0_18px_40px_rgba(63,159,136,0.28)]">
-            <p className="text-sm text-white/75">Total earnings</p>
-            <p className="mt-3 font-display text-3xl">
+          <div className="soft-card bg-teal p-6 text-white shadow-[0_18px_40px_rgba(63,159,136,0.28)]">
+            <p className="text-base font-medium text-white/90">Total earnings</p>
+            <p className="metric mt-4 text-4xl">
               {stats ? formatPrice(stats.revenue) : "—"}
             </p>
-            <p className="mt-2 text-xs text-white/65">All completed sales</p>
+            <p className="mt-3 text-sm text-white/85">All completed sales</p>
           </div>
-          <div className="soft-card p-5">
+          <div className="soft-card p-6">
             <div className="flex items-center justify-between">
-              <p className="text-sm text-muted">Orders</p>
-              <ShoppingBag size={16} className="text-muted" />
+              <p className="text-base font-medium text-muted">Orders</p>
+              <ShoppingBag size={18} className="text-muted" />
             </div>
-            <p className="mt-3 font-display text-3xl">{stats?.orders ?? "—"}</p>
-            <p className="mt-2 text-xs text-muted">Lifetimeetime</p>
+            <p className="metric mt-4 text-4xl text-ink">{stats?.orders ?? "—"}</p>
+            <p className="mt-3 text-sm text-muted">All time</p>
           </div>
-          <div className="soft-card p-5">
+          <div className="soft-card p-6">
             <div className="flex items-center justify-between">
-              <p className="text-sm text-muted">Products</p>
-              <Package size={16} className="text-muted" />
+              <p className="text-base font-medium text-muted">Products</p>
+              <Package size={18} className="text-muted" />
             </div>
-            <p className="mt-3 font-display text-3xl">{stats?.products ?? "—"}</p>
-            <p className="mt-2 text-xs text-muted">In catalog</p>
+            <p className="metric mt-4 text-4xl text-ink">{stats?.products ?? "—"}</p>
+            <p className="mt-3 text-sm text-muted">In catalog</p>
           </div>
-          <div className="soft-card p-5">
+          <div className="soft-card p-6">
             <div className="flex items-center justify-between">
-              <p className="text-sm text-muted">Customers</p>
-              <Users size={16} className="text-muted" />
+              <p className="text-base font-medium text-muted">Customers</p>
+              <Users size={18} className="text-muted" />
             </div>
-            <p className="mt-3 font-display text-3xl">{stats?.customers ?? "—"}</p>
-            <p className="mt-2 text-xs text-muted">Registered buyers</p>
+            <p className="metric mt-4 text-4xl text-ink">{stats?.customers ?? "—"}</p>
+            <p className="mt-3 text-sm text-muted">Registered buyers</p>
           </div>
         </Stagger>
 
         <Stagger className="grid gap-4 xl:grid-cols-[0.85fr_1.15fr]">
-          <section className="soft-card p-6">
-            <p className="text-sm text-muted">Inventory pressure</p>
-            <h2 className="mt-1 font-display text-2xl">Low stock watch</h2>
-            <p className="mt-6 text-sm">
-              <span className="font-semibold">{stats?.lowStockCount ?? 0}</span> SKUs need
-              attention
+          <section className="soft-card p-6 sm:p-7">
+            <p className="text-base font-medium text-muted">Inventory pressure</p>
+            <h2 className="mt-1 font-display text-3xl text-ink">Low stock watch</h2>
+            <p className="mt-6 text-base">
+              <span className="font-bold">{stats?.lowStockCount ?? 0}</span> SKUs need attention
             </p>
-            <div className="mt-3 h-3 overflow-hidden rounded-full soft-inset">
+            <div className="mt-3 h-3.5 overflow-hidden rounded-full soft-inset">
               <div
                 className={`h-full rounded-full bg-gradient-to-r from-teal to-ink transition-all duration-1000 ease-out ${ready ? "" : "w-0"}`}
                 style={{
@@ -238,18 +240,18 @@ export default function OverviewPage() {
                 }}
               />
             </div>
-            <ul className="mt-5 space-y-3 stagger-children">
+            <ul className="mt-5 space-y-3.5 stagger-children">
               {lowStock.length === 0 ? (
-                <li className="text-sm text-muted">All stock levels look healthy.</li>
+                <li className="text-base text-muted">All stock levels look healthy.</li>
               ) : (
                 lowStock.slice(0, 4).map((p) => (
-                  <li key={p.id} className="flex items-center justify-between text-sm">
-                    <span className="truncate pr-3">{p.name}</span>
+                  <li key={p.id} className="flex items-center justify-between text-base">
+                    <span className="truncate pr-3 font-medium">{p.name}</span>
                     <span
-                      className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                      className={`rounded-full px-3 py-1 text-sm font-semibold ${
                         p.stockQuantity === 0
-                          ? "bg-rose-100 text-rose-700"
-                          : "bg-amber-100 text-amber-800"
+                          ? "bg-rose-100 text-rose-800"
+                          : "bg-amber-100 text-amber-900"
                       }`}
                     >
                       {p.stockQuantity} left
@@ -260,50 +262,50 @@ export default function OverviewPage() {
             </ul>
             <Link
               href="/inventory"
-              className="mt-5 inline-flex text-sm font-medium text-teal-dark hover:underline"
+              className="mt-6 inline-flex text-base font-semibold text-teal-dark hover:underline"
             >
               Open inventory →
             </Link>
           </section>
 
           <section className="soft-card overflow-hidden">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line/70 px-5 py-4">
-              <h2 className="font-display text-2xl">Recent orders</h2>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line/70 px-5 py-5">
+              <h2 className="font-display text-3xl text-ink">Recent orders</h2>
               <div className="flex items-center gap-2">
-                <div className="flex items-center gap-2 rounded-full soft-inset px-3 py-2">
-                  <Search size={14} className="text-muted" />
+                <div className="flex items-center gap-2 rounded-full soft-inset px-3.5 py-2.5">
+                  <Search size={16} className="text-muted" />
                   <input
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="Search"
-                    className="w-28 bg-transparent text-sm outline-none sm:w-40"
+                    className="w-28 bg-transparent text-base outline-none sm:w-44"
                   />
                 </div>
                 <button
                   type="button"
-                  className="btn-press flex h-9 w-9 items-center justify-center rounded-full soft-inset text-muted"
+                  className="btn-press flex h-10 w-10 items-center justify-center rounded-full soft-inset text-muted"
                   aria-label="Filter"
                 >
-                  <Filter size={14} />
+                  <Filter size={16} />
                 </button>
               </div>
             </div>
 
             <div className="overflow-x-auto">
-              <table className="min-w-full text-left text-sm">
-                <thead className="text-[11px] tracking-[0.14em] uppercase text-muted">
+              <table className="min-w-full text-left text-base">
+                <thead className="table-head">
                   <tr>
-                    <th className="px-5 py-3 font-medium">Order</th>
-                    <th className="px-5 py-3 font-medium">Customer</th>
-                    <th className="px-5 py-3 font-medium">Total</th>
-                    <th className="px-5 py-3 font-medium">Status</th>
-                    <th className="px-5 py-3 font-medium">Date</th>
+                    <th className="px-5 py-3.5">Order</th>
+                    <th className="px-5 py-3.5">Customer</th>
+                    <th className="px-5 py-3.5">Total</th>
+                    <th className="px-5 py-3.5">Status</th>
+                    <th className="px-5 py-3.5">Date</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredOrders.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-5 py-10 text-muted">
+                      <td colSpan={5} className="px-5 py-12 text-base text-muted">
                         No orders yet — place one from the storefront.
                       </td>
                     </tr>
@@ -314,21 +316,19 @@ export default function OverviewPage() {
                         className="row-enter border-t border-line/60"
                         style={{ animationDelay: `${i * 60}ms` }}
                       >
-                        <td className="px-5 py-3.5 font-medium">{o.orderNumber}</td>
-                        <td className="px-5 py-3.5 text-muted">{o.email}</td>
-                        <td className="px-5 py-3.5">{formatPrice(o.total)}</td>
-                        <td className="px-5 py-3.5">
+                        <td className="px-5 py-4 font-semibold">{o.orderNumber}</td>
+                        <td className="px-5 py-4 text-muted">{o.email}</td>
+                        <td className="px-5 py-4 font-semibold">{formatPrice(o.total)}</td>
+                        <td className="px-5 py-4">
                           <span
-                            className={`rounded-full px-2.5 py-1 text-xs capitalize ${
-                              statusTone[o.status] ?? "bg-[#f3eee7] text-muted"
+                            className={`rounded-full px-3 py-1 text-sm font-semibold capitalize ${
+                              statusTone[o.status] ?? "bg-[#efe8de] text-muted"
                             }`}
                           >
                             {o.status}
                           </span>
                         </td>
-                        <td className="px-5 py-3.5 text-muted">
-                          {formatDate(o.createdAt)}
-                        </td>
+                        <td className="px-5 py-4 text-muted">{formatDate(o.createdAt)}</td>
                       </tr>
                     ))
                   )}
