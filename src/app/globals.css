@@ -67,7 +67,7 @@ body {
 }
 
 .soft-card {
-  background: var(--panel);
+  background-color: var(--panel);
   border-radius: 28px;
   box-shadow:
     0 18px 40px rgba(44, 36, 32, 0.06),

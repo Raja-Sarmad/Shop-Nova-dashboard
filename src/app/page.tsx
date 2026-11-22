@@ -190,12 +190,15 @@ export default function OverviewPage() {
         </Stagger>
 
         <Stagger className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="soft-card bg-teal p-6 text-white shadow-[0_18px_40px_rgba(63,159,136,0.28)]">
-            <p className="text-base font-medium text-white/90">Total earnings</p>
-            <p className="metric mt-4 text-4xl">
+          <div
+            className="soft-card p-6 shadow-[0_18px_40px_rgba(63,159,136,0.28)]"
+            style={{ backgroundColor: "#2f7d6a", color: "#ffffff" }}
+          >
+            <p className="text-base font-medium text-white">Total earnings</p>
+            <p className="metric mt-4 text-4xl text-white">
               {stats ? formatPrice(stats.revenue) : "—"}
             </p>
-            <p className="mt-3 text-sm text-white/85">All completed sales</p>
+            <p className="mt-3 text-sm text-white/90">All completed sales</p>
           </div>
           <div className="soft-card p-6">
             <div className="flex items-center justify-between">
