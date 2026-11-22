@@ -3,10 +3,10 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
-import { Plus, Pencil, Trash2, X, Upload } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Upload, Star } from "lucide-react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { api } from "@/lib/api";
-import { formatPrice } from "@/lib/format";
+import { cn, formatPrice } from "@/lib/format";
 
 type Product = {
   id: string;
@@ -29,13 +29,16 @@ type Product = {
   isPublished?: boolean;
 };
 
+type Category = "fragrance" | "shoes";
+type Tab = "all" | Category;
+
 type FormState = {
   name: string;
   subtitle: string;
   description: string;
   price: string;
   compareAtPrice: string;
-  category: string;
+  category: Category;
   collectionSlug: string;
   sizes: string;
   colors: string;
@@ -46,7 +49,14 @@ type FormState = {
   isPublished: boolean;
 };
 
-const blank: FormState = {
+type ImageDraft = {
+  key: string;
+  url: string;
+  publicId?: string;
+  file?: File;
+};
+
+const perfumeDefaults: FormState = {
   name: "",
   subtitle: "",
   description: "",
@@ -54,23 +64,45 @@ const blank: FormState = {
   compareAtPrice: "",
   category: "fragrance",
   collectionSlug: "signature-scents",
-  sizes: "50ml",
-  colors: "Noir:#1A1614",
+  sizes: "50ml, 100ml",
+  colors: "Amber:#C48A3A, Noir:#1A1614",
   stockQuantity: "10",
-  fabric: "",
+  fabric: "Eau de Parfum",
   isNew: true,
   isBestseller: false,
   isPublished: true,
 };
 
+const shoesDefaults: FormState = {
+  name: "",
+  subtitle: "",
+  description: "",
+  price: "",
+  compareAtPrice: "",
+  category: "shoes",
+  collectionSlug: "everyday-footwear",
+  sizes: "40, 41, 42, 43, 44",
+  colors: "Black:#1A1614, Brown:#6B4423",
+  stockQuantity: "10",
+  fabric: "Leather",
+  isNew: true,
+  isBestseller: false,
+  isPublished: true,
+};
+
+function defaultsFor(category: Category): FormState {
+  return category === "shoes" ? { ...shoesDefaults } : { ...perfumeDefaults };
+}
+
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [tab, setTab] = useState<Tab>("all");
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
-  const [form, setForm] = useState<FormState>(blank);
-  const [files, setFiles] = useState<File[]>([]);
-  const [existingImages, setExistingImages] = useState<{ url: string; publicId: string }[]>([]);
+  const [form, setForm] = useState<FormState>(perfumeDefaults);
+  const [images, setImages] = useState<ImageDraft[]>([]);
+  const [primaryKey, setPrimaryKey] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -84,16 +116,33 @@ export default function ProductsPage() {
     refresh().catch((err) => setError(err instanceof Error ? err.message : "Failed"));
   }, []);
 
+  useEffect(() => {
+    return () => {
+      images.forEach((img) => {
+        if (img.file) URL.revokeObjectURL(img.url);
+      });
+    };
+  }, [images]);
+
   const visible = useMemo(() => {
     const q = query.toLowerCase();
-    return products.filter((p) => p.name.toLowerCase().includes(q) || p.slug.includes(q));
-  }, [products, query]);
+    return products.filter((p) => {
+      const matchTab = tab === "all" || p.category === tab;
+      const matchQuery =
+        !q || p.name.toLowerCase().includes(q) || p.slug.includes(q);
+      return matchTab && matchQuery;
+    });
+  }, [products, query, tab]);
 
-  const beginCreate = () => {
+  const perfumeCount = products.filter((p) => p.category === "fragrance").length;
+  const shoesCount = products.filter((p) => p.category === "shoes").length;
+  const isPerfume = form.category === "fragrance";
+
+  const beginCreate = (category: Category = "fragrance") => {
     setEditing(null);
-    setForm(blank);
-    setFiles([]);
-    setExistingImages([]);
+    setForm(defaultsFor(category));
+    setImages([]);
+    setPrimaryKey("");
     setOpen(true);
     setError("");
   };
@@ -106,7 +155,7 @@ export default function ProductsPage() {
       description: product.description,
       price: String(product.price),
       compareAtPrice: product.compareAtPrice ? String(product.compareAtPrice) : "",
-      category: product.category,
+      category: (product.category as Category) || "fragrance",
       collectionSlug: product.collection,
       sizes: product.sizes.join(", "),
       colors: product.colors.map((c) => `${c.name}:${c.hex}`).join(", "),
@@ -116,14 +165,57 @@ export default function ProductsPage() {
       isBestseller: Boolean(product.isBestseller),
       isPublished: product.isPublished !== false,
     });
-    setExistingImages(
+    const drafts =
       product.imageMeta?.length
-        ? product.imageMeta
-        : product.images.map((url) => ({ url, publicId: "" })),
-    );
-    setFiles([]);
+        ? product.imageMeta.map((img, i) => ({
+            key: `existing-${i}-${img.url}`,
+            url: img.url,
+            publicId: img.publicId,
+          }))
+        : product.images.map((url, i) => ({
+            key: `existing-${i}-${url}`,
+            url,
+            publicId: "",
+          }));
+    setImages(drafts);
+    setPrimaryKey(drafts[0]?.key ?? "");
     setOpen(true);
     setError("");
+  };
+
+  const switchCategory = (category: Category) => {
+    if (editing) {
+      setForm((f) => ({
+        ...f,
+        category,
+        collectionSlug:
+          category === "shoes" ? "everyday-footwear" : "signature-scents",
+      }));
+      return;
+    }
+    setForm(defaultsFor(category));
+  };
+
+  const addFiles = (fileList: FileList | null) => {
+    const nextFiles = Array.from(fileList ?? []).slice(0, 8);
+    if (!nextFiles.length) return;
+    const drafts = nextFiles.map((file, i) => ({
+      key: `file-${Date.now()}-${i}-${file.name}`,
+      url: URL.createObjectURL(file),
+      file,
+    }));
+    setImages((current) => [...current, ...drafts].slice(0, 8));
+    setPrimaryKey((current) => current || drafts[0]?.key || "");
+  };
+
+  const removeImage = (key: string) => {
+    setImages((current) => {
+      const target = current.find((img) => img.key === key);
+      if (target?.file) URL.revokeObjectURL(target.url);
+      const next = current.filter((img) => img.key !== key);
+      if (primaryKey === key) setPrimaryKey(next[0]?.key ?? "");
+      return next;
+    });
   };
 
   const onSubmit = async (e: FormEvent) => {
@@ -131,6 +223,26 @@ export default function ProductsPage() {
     setSaving(true);
     setError("");
     try {
+      const ordered = [...images];
+      const primaryIndex = Math.max(
+        0,
+        ordered.findIndex((img) => img.key === primaryKey),
+      );
+      const files = ordered.filter((img) => img.file).map((img) => img.file!);
+      const existingImages = ordered
+        .filter((img) => !img.file)
+        .map((img) => ({ url: img.url, publicId: img.publicId ?? "" }));
+      let newIndex = 0;
+      const imagePlan = ordered.map((img) =>
+        img.file
+          ? { type: "new" as const, index: newIndex++ }
+          : {
+              type: "existing" as const,
+              url: img.url,
+              publicId: img.publicId ?? "",
+            },
+      );
+
       const fd = new FormData();
       fd.append("name", form.name);
       fd.append("subtitle", form.subtitle);
@@ -147,6 +259,8 @@ export default function ProductsPage() {
       fd.append("isBestseller", String(form.isBestseller));
       fd.append("isPublished", String(form.isPublished));
       fd.append("existingImages", JSON.stringify(existingImages));
+      fd.append("imagePlan", JSON.stringify(imagePlan));
+      fd.append("primaryImageIndex", String(primaryIndex < 0 ? 0 : primaryIndex));
       files.forEach((file) => fd.append("images", file));
 
       if (editing) {
@@ -177,83 +291,132 @@ export default function ProductsPage() {
       <div className="space-y-5">
         <div className="flex flex-wrap items-end justify-between gap-4 anim-fade-up">
           <div>
-            <p className="text-[11px] tracking-[0.22em] uppercase text-muted">Catalog</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">
+              Catalog
+            </p>
             <h1 className="mt-2 font-display text-4xl">Products</h1>
           </div>
-          <button
-            type="button"
-            onClick={beginCreate}
-            className="btn-press inline-flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-xs tracking-[0.14em] uppercase text-white"
-          >
-            <Plus size={14} /> Add product
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => beginCreate("fragrance")}
+              className="inline-flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-white"
+            >
+              <Plus size={15} /> Add perfume
+            </button>
+            <button
+              type="button"
+              onClick={() => beginCreate("shoes")}
+              className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-5 py-2.5 text-sm font-semibold text-ink"
+            >
+              <Plus size={15} /> Add shoes
+            </button>
+          </div>
         </div>
 
         {notice ? (
-          <p className="mt-4 rounded-lg border border-ok/30 bg-ok/10 px-3 py-2 text-sm text-ok">
+          <p className="rounded-xl border border-ok/30 bg-ok/10 px-4 py-3 text-base text-ok">
             {notice}
           </p>
         ) : null}
         {error && !open ? (
-          <p className="mt-4 rounded-lg border border-accent/30 bg-accent/10 px-3 py-2 text-sm">
+          <p className="rounded-xl border border-accent/30 bg-accent/10 px-4 py-3 text-base">
             {error}
           </p>
         ) : null}
 
-        <div className="anim-fade-up" style={{ animationDelay: "80ms" }}>
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search products…"
-            className="w-full max-w-md rounded-full border border-line bg-panel px-4 py-2.5 text-sm outline-none focus:border-ink"
-          />
+        <div className="flex flex-wrap items-center gap-2">
+          {(
+            [
+              ["all", `All (${products.length})`],
+              ["fragrance", `Perfumes (${perfumeCount})`],
+              ["shoes", `Shoes (${shoesCount})`],
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setTab(value)}
+              className={cn(
+                "rounded-full px-4 py-2 text-sm font-semibold",
+                tab === value
+                  ? "bg-ink text-white"
+                  : "bg-white text-muted shadow-[0_0_0_1px_rgba(44,36,32,0.08)]",
+              )}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
-        <div className="overflow-x-auto soft-card anim-fade-up" style={{ animationDelay: "140ms" }}>
-          <table className="min-w-full text-left text-sm">
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search products…"
+          className="w-full max-w-md rounded-full border border-line bg-panel px-4 py-3 text-base outline-none focus:border-ink"
+        />
+
+        <div className="overflow-x-auto soft-card">
+          <table className="min-w-full text-left text-base">
             <thead className="table-head border-b border-line">
               <tr>
-                <th className="px-4 py-3">Product</th>
-                <th className="px-4 py-3">Category</th>
-                <th className="px-4 py-3">Price</th>
-                <th className="px-4 py-3">Stock</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3" />
+                <th className="px-4 py-3.5">Product</th>
+                <th className="px-4 py-3.5">Category</th>
+                <th className="px-4 py-3.5">Price</th>
+                <th className="px-4 py-3.5">Stock</th>
+                <th className="px-4 py-3.5">Status</th>
+                <th className="px-4 py-3.5" />
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
-              {visible.map((p, i) => (
-                <tr key={p.id} className="row-enter" style={{ animationDelay: `${i * 50}ms` }}>
-                  <td className="px-4 py-3">
+              {visible.map((p) => (
+                <tr key={p.id}>
+                  <td className="px-4 py-3.5">
                     <div className="flex items-center gap-3">
-                      <div className="relative h-12 w-10 overflow-hidden bg-line">
+                      <div className="relative h-14 w-12 overflow-hidden rounded-lg bg-line">
                         {p.images[0] ? (
-                          <Image src={p.images[0]} alt="" fill className="object-cover" unoptimized />
+                          <Image
+                            src={p.images[0]}
+                            alt=""
+                            fill
+                            className="object-cover"
+                            unoptimized
+                          />
                         ) : null}
                       </div>
                       <div>
-                        <p className="font-medium">{p.name}</p>
-                        <p className="text-xs text-muted">{p.slug}</p>
+                        <p className="font-semibold">{p.name}</p>
+                        <p className="text-sm text-muted">{p.slug}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 capitalize">{p.category}</td>
-                  <td className="px-4 py-3">{formatPrice(p.price)}</td>
-                  <td className="px-4 py-3">{p.stockQuantity}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3.5 capitalize">
+                    {p.category === "fragrance" ? "Perfume" : "Shoes"}
+                  </td>
+                  <td className="px-4 py-3.5 font-semibold">{formatPrice(p.price)}</td>
+                  <td className="px-4 py-3.5">{p.stockQuantity}</td>
+                  <td className="px-4 py-3.5">
                     {p.isPublished === false ? (
                       <span className="text-muted">Draft</span>
                     ) : (
-                      <span className="text-ok">Live</span>
+                      <span className="font-semibold text-ok">Live</span>
                     )}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3.5">
                     <div className="flex justify-end gap-2">
-                      <button type="button" onClick={() => beginEdit(p)} className="p-2 text-muted hover:text-ink">
-                        <Pencil size={14} />
+                      <button
+                        type="button"
+                        onClick={() => beginEdit(p)}
+                        className="rounded-full p-2 text-muted hover:bg-[#f3eee7] hover:text-ink"
+                      >
+                        <Pencil size={16} />
                       </button>
-                      <button type="button" onClick={() => remove(p)} className="p-2 text-muted hover:text-accent">
-                        <Trash2 size={14} />
+                      <button
+                        type="button"
+                        onClick={() => remove(p)}
+                        className="rounded-full p-2 text-muted hover:bg-rose-50 hover:text-accent"
+                      >
+                        <Trash2 size={16} />
                       </button>
                     </div>
                   </td>
@@ -262,7 +425,9 @@ export default function ProductsPage() {
             </tbody>
           </table>
           {visible.length === 0 ? (
-            <p className="px-4 py-10 text-center text-sm text-muted">No products yet. Add your first piece.</p>
+            <p className="px-4 py-10 text-center text-base text-muted">
+              No products in this section yet.
+            </p>
           ) : null}
         </div>
 
@@ -277,12 +442,19 @@ export default function ProductsPage() {
                 />
                 <form
                   onSubmit={onSubmit}
-                  className="relative z-10 flex max-h-[min(92vh,900px)] w-full max-w-2xl flex-col overflow-hidden rounded-[28px] bg-white shadow-[0_30px_80px_rgba(44,36,32,0.28)]"
+                  className="relative z-10 flex max-h-[min(92vh,920px)] w-full max-w-3xl flex-col overflow-hidden rounded-[28px] bg-white shadow-[0_30px_80px_rgba(44,36,32,0.28)]"
                 >
                   <div className="flex shrink-0 items-center justify-between gap-3 border-b border-line px-5 py-4 sm:px-6">
-                    <h2 className="font-display text-3xl text-ink">
-                      {editing ? "Edit product" : "New product"}
-                    </h2>
+                    <div>
+                      <p className="text-sm font-semibold uppercase tracking-[0.16em] text-muted">
+                        {isPerfume ? "Perfume form" : "Shoes form"}
+                      </p>
+                      <h2 className="mt-1 font-display text-3xl text-ink">
+                        {editing
+                          ? `Edit ${isPerfume ? "perfume" : "shoes"}`
+                          : `New ${isPerfume ? "perfume" : "shoes"}`}
+                      </h2>
+                    </div>
                     <button
                       type="button"
                       onClick={() => setOpen(false)}
@@ -294,55 +466,170 @@ export default function ProductsPage() {
                   </div>
 
                   <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      {(
-                        [
-                          ["name", "Name", "e.g. Amber Oud Mist"],
-                          ["subtitle", "Subtitle", "Short line under the name"],
-                          ["price", "Price (PKR)", "4500"],
-                          ["compareAtPrice", "Compare-at price", "Optional old price"],
-                          ["collectionSlug", "Collection slug", "e.g. oud-collection"],
-                          ["stockQuantity", "Stock", "10"],
-                          ["sizes", "Sizes (comma)", "S, M, L or 40, 41, 42"],
-                          ["colors", "Colors (Name:#hex)", "Black:#111111, Gold:#c9a96e"],
-                          ["fabric", "Fabric / notes", "Optional"],
-                        ] as const
-                      ).map(([key, label, placeholder]) => (
-                        <label key={key} className="block text-sm">
-                          <span className="mb-1.5 block text-sm font-semibold text-ink">{label}</span>
-                          <input
-                            required={key === "name" || key === "price"}
-                            value={form[key]}
-                            placeholder={placeholder}
-                            onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-                            className="w-full rounded-xl border border-line bg-white px-3.5 py-3 text-base text-ink outline-none transition placeholder:text-muted/70 focus:border-ink focus:ring-2 focus:ring-ink/10"
-                          />
-                        </label>
-                      ))}
+                    <div className="mb-5 grid grid-cols-2 gap-2 rounded-2xl bg-[#f5f0e8] p-1.5">
+                      <button
+                        type="button"
+                        onClick={() => switchCategory("fragrance")}
+                        className={cn(
+                          "rounded-xl px-4 py-3 text-sm font-semibold",
+                          isPerfume ? "bg-white text-ink shadow" : "text-muted",
+                        )}
+                      >
+                        Perfume
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => switchCategory("shoes")}
+                        className={cn(
+                          "rounded-xl px-4 py-3 text-sm font-semibold",
+                          !isPerfume ? "bg-white text-ink shadow" : "text-muted",
+                        )}
+                      >
+                        Shoes
+                      </button>
+                    </div>
 
-                      <label className="block text-sm">
-                        <span className="mb-1.5 block text-sm font-semibold text-ink">Category</span>
-                        <select
-                          value={form.category}
-                          onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-                          className="w-full rounded-xl border border-line bg-white px-3.5 py-3 text-base text-ink outline-none transition focus:border-ink focus:ring-2 focus:ring-ink/10"
-                        >
-                          {["fragrance", "shoes"].map((c) => (
-                            <option key={c} value={c}>
-                              {c}
-                            </option>
-                          ))}
-                        </select>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <label className="block sm:col-span-2">
+                        <span className="mb-1.5 block text-sm font-semibold text-ink">Name</span>
+                        <input
+                          required
+                          value={form.name}
+                          placeholder={
+                            isPerfume ? "e.g. Amber Oud Mist" : "e.g. Canvas Court Sneaker"
+                          }
+                          onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                          className="field"
+                        />
                       </label>
 
-                      <label className="block text-sm sm:col-span-2">
-                        <span className="mb-1.5 block text-sm font-semibold text-ink">Description</span>
+                      <label className="block sm:col-span-2">
+                        <span className="mb-1.5 block text-sm font-semibold text-ink">
+                          Subtitle
+                        </span>
+                        <input
+                          value={form.subtitle}
+                          placeholder={
+                            isPerfume
+                              ? "Warm, lasting fragrance note"
+                              : "Everyday comfort with clean lines"
+                          }
+                          onChange={(e) => setForm((f) => ({ ...f, subtitle: e.target.value }))}
+                          className="field"
+                        />
+                      </label>
+
+                      <label className="block">
+                        <span className="mb-1.5 block text-sm font-semibold text-ink">
+                          Price (PKR)
+                        </span>
+                        <input
+                          required
+                          value={form.price}
+                          placeholder="4500"
+                          onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
+                          className="field"
+                        />
+                      </label>
+
+                      <label className="block">
+                        <span className="mb-1.5 block text-sm font-semibold text-ink">
+                          Compare-at price
+                        </span>
+                        <input
+                          value={form.compareAtPrice}
+                          placeholder="Optional old price"
+                          onChange={(e) =>
+                            setForm((f) => ({ ...f, compareAtPrice: e.target.value }))
+                          }
+                          className="field"
+                        />
+                      </label>
+
+                      <label className="block">
+                        <span className="mb-1.5 block text-sm font-semibold text-ink">
+                          {isPerfume ? "Bottle sizes" : "Shoe sizes"}
+                        </span>
+                        <input
+                          value={form.sizes}
+                          placeholder={isPerfume ? "30ml, 50ml, 100ml" : "40, 41, 42, 43, 44"}
+                          onChange={(e) => setForm((f) => ({ ...f, sizes: e.target.value }))}
+                          className="field"
+                        />
+                      </label>
+
+                      <label className="block">
+                        <span className="mb-1.5 block text-sm font-semibold text-ink">
+                          {isPerfume ? "Scent accents / colors" : "Colorways"}
+                        </span>
+                        <input
+                          value={form.colors}
+                          placeholder={
+                            isPerfume
+                              ? "Amber:#C48A3A, Noir:#1A1614"
+                              : "Black:#1A1614, Brown:#6B4423"
+                          }
+                          onChange={(e) => setForm((f) => ({ ...f, colors: e.target.value }))}
+                          className="field"
+                        />
+                      </label>
+
+                      <label className="block">
+                        <span className="mb-1.5 block text-sm font-semibold text-ink">
+                          {isPerfume ? "Concentration" : "Material"}
+                        </span>
+                        <input
+                          value={form.fabric}
+                          placeholder={isPerfume ? "Eau de Parfum / Attar" : "Leather / Suede / Mesh"}
+                          onChange={(e) => setForm((f) => ({ ...f, fabric: e.target.value }))}
+                          className="field"
+                        />
+                      </label>
+
+                      <label className="block">
+                        <span className="mb-1.5 block text-sm font-semibold text-ink">Stock</span>
+                        <input
+                          value={form.stockQuantity}
+                          placeholder="10"
+                          onChange={(e) =>
+                            setForm((f) => ({ ...f, stockQuantity: e.target.value }))
+                          }
+                          className="field"
+                        />
+                      </label>
+
+                      <label className="block sm:col-span-2">
+                        <span className="mb-1.5 block text-sm font-semibold text-ink">
+                          Collection slug
+                        </span>
+                        <input
+                          value={form.collectionSlug}
+                          placeholder={
+                            isPerfume ? "signature-scents" : "everyday-footwear"
+                          }
+                          onChange={(e) =>
+                            setForm((f) => ({ ...f, collectionSlug: e.target.value }))
+                          }
+                          className="field"
+                        />
+                      </label>
+
+                      <label className="block sm:col-span-2">
+                        <span className="mb-1.5 block text-sm font-semibold text-ink">
+                          Description
+                        </span>
                         <textarea
                           value={form.description}
-                          onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                           rows={4}
-                          placeholder="Write a short product description…"
-                          className="w-full rounded-xl border border-line bg-white px-3.5 py-3 text-base text-ink outline-none transition placeholder:text-muted/70 focus:border-ink focus:ring-2 focus:ring-ink/10"
+                          placeholder={
+                            isPerfume
+                              ? "Describe the notes, mood, and wear time…"
+                              : "Describe fit, sole, and when to wear them…"
+                          }
+                          onChange={(e) =>
+                            setForm((f) => ({ ...f, description: e.target.value }))
+                          }
+                          className="field"
                         />
                       </label>
                     </div>
@@ -359,7 +646,9 @@ export default function ProductsPage() {
                           <input
                             type="checkbox"
                             checked={form[key]}
-                            onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.checked }))}
+                            onChange={(e) =>
+                              setForm((f) => ({ ...f, [key]: e.target.checked }))
+                            }
                             className="h-4 w-4 accent-teal"
                           />
                           {label}
@@ -368,33 +657,72 @@ export default function ProductsPage() {
                     </div>
 
                     <div className="mt-6">
-                      <p className="text-sm font-semibold text-ink">Images → Cloudinary</p>
-                      {existingImages.length > 0 ? (
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {existingImages.map((img) => (
-                            <div
-                              key={img.url}
-                              className="relative h-20 w-16 overflow-hidden rounded-lg bg-line"
-                            >
-                              <Image src={img.url} alt="" fill className="object-cover" unoptimized />
-                              <button
-                                type="button"
-                                className="absolute top-0 right-0 bg-ink/70 p-0.5 text-panel"
-                                onClick={() =>
-                                  setExistingImages((list) => list.filter((i) => i.url !== img.url))
-                                }
+                      <div className="flex flex-wrap items-end justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-semibold text-ink">Product images</p>
+                          <p className="mt-1 text-sm text-muted">
+                            Star the image that should show on the website card &amp; hero.
+                          </p>
+                        </div>
+                      </div>
+
+                      {images.length ? (
+                        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                          {images.map((img) => {
+                            const isPrimary = img.key === primaryKey;
+                            return (
+                              <div
+                                key={img.key}
+                                className={cn(
+                                  "relative overflow-hidden rounded-2xl border bg-[#f7f3ed]",
+                                  isPrimary
+                                    ? "border-teal ring-2 ring-teal/30"
+                                    : "border-line",
+                                )}
                               >
-                                <X size={12} />
-                              </button>
-                            </div>
-                          ))}
+                                <div className="relative aspect-[3/4]">
+                                  <Image
+                                    src={img.url}
+                                    alt=""
+                                    fill
+                                    className="object-cover"
+                                    unoptimized
+                                  />
+                                </div>
+                                <div className="absolute inset-x-0 top-0 flex justify-between p-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => setPrimaryKey(img.key)}
+                                    className={cn(
+                                      "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold",
+                                      isPrimary
+                                        ? "bg-teal text-white"
+                                        : "bg-white/95 text-ink",
+                                    )}
+                                  >
+                                    <Star size={12} fill={isPrimary ? "currentColor" : "none"} />
+                                    {isPrimary ? "Display" : "Set display"}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeImage(img.key)}
+                                    className="rounded-full bg-ink/75 p-1 text-white"
+                                    aria-label="Remove image"
+                                  >
+                                    <X size={12} />
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       ) : null}
-                      <label className="mt-3 flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-line bg-[#faf7f2] px-4 py-6 text-base text-muted transition hover:border-ink hover:text-ink">
+
+                      <label className="mt-4 flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-line bg-[#faf7f2] px-4 py-6 text-base text-muted transition hover:border-ink hover:text-ink">
                         <Upload size={18} />
                         <span>
-                          {files.length
-                            ? `${files.length} file(s) selected`
+                          {images.length
+                            ? `${images.length}/8 images — add more`
                             : "Upload images (max 8, 5MB each)"}
                         </span>
                         <input
@@ -402,7 +730,10 @@ export default function ProductsPage() {
                           accept="image/*"
                           multiple
                           className="hidden"
-                          onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
+                          onChange={(e) => {
+                            addFiles(e.target.files);
+                            e.target.value = "";
+                          }}
                         />
                       </label>
                     </div>
