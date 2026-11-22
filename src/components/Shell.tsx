@@ -133,7 +133,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         </header>
       </Motion>
 
-      <Motion variant="fade-scale" delay={80} className="relative mx-auto max-w-[1280px] lg:ml-24">
+      <div className="relative z-10 mx-auto max-w-[1280px] lg:ml-24">
         <div className="min-h-[calc(100vh-8rem)] rounded-[36px] bg-canvas p-4 pb-28 shadow-[0_30px_80px_rgba(44,36,32,0.08)] sm:p-6 lg:p-8">
           {pathname === "/" ? (
             <div className="mb-6 hidden anim-fade-up lg:block">
@@ -147,7 +147,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           ) : null}
           <PageMotion>{children}</PageMotion>
         </div>
-      </Motion>
+      </div>
 
       <Motion
         variant="fade-up"
