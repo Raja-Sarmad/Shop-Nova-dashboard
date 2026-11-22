@@ -271,11 +271,16 @@ export default function ProductsPage() {
               onSubmit={onSubmit}
               className="my-8 w-full max-w-2xl soft-card anim-fade-scale p-6"
             >
-              <div className="mb-6 flex items-center justify-between">
-                <h2 className="font-display text-3xl">
+              <div className="mb-6 flex items-center justify-between gap-3">
+                <h2 className="font-display text-3xl text-ink">
                   {editing ? "Edit product" : "New product"}
                 </h2>
-                <button type="button" onClick={() => setOpen(false)}>
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="flex h-10 w-10 items-center justify-center rounded-full soft-inset text-muted hover:text-ink"
+                  aria-label="Close"
+                >
                   <X size={18} />
                 </button>
               </div>
@@ -283,34 +288,35 @@ export default function ProductsPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 {(
                   [
-                    ["name", "Name"],
-                    ["subtitle", "Subtitle"],
-                    ["price", "Price (PKR)"],
-                    ["compareAtPrice", "Compare-at price"],
-                    ["collectionSlug", "Collection slug"],
-                    ["stockQuantity", "Stock"],
-                    ["sizes", "Sizes (comma)"],
-                    ["colors", "Colors (Name:#hex)"],
-                    ["fabric", "Fabric"],
+                    ["name", "Name", "e.g. Amber Oud Mist"],
+                    ["subtitle", "Subtitle", "Short line under the name"],
+                    ["price", "Price (PKR)", "4500"],
+                    ["compareAtPrice", "Compare-at price", "Optional old price"],
+                    ["collectionSlug", "Collection slug", "e.g. oud-collection"],
+                    ["stockQuantity", "Stock", "10"],
+                    ["sizes", "Sizes (comma)", "S, M, L or 40, 41, 42"],
+                    ["colors", "Colors (Name:#hex)", "Black:#111111, Gold:#c9a96e"],
+                    ["fabric", "Fabric / notes", "Optional"],
                   ] as const
-                ).map(([key, label]) => (
+                ).map(([key, label, placeholder]) => (
                   <label key={key} className="block text-sm">
-                    <span className="text-[11px] tracking-[0.14em] uppercase text-muted">{label}</span>
+                    <span className="mb-1.5 block text-sm font-semibold text-ink">{label}</span>
                     <input
                       required={key === "name" || key === "price"}
                       value={form[key]}
+                      placeholder={placeholder}
                       onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-                      className="mt-1 w-full border-b border-line bg-transparent py-2 outline-none"
+                      className="w-full rounded-xl border border-line bg-white px-3.5 py-3 text-base text-ink outline-none transition placeholder:text-muted/70 focus:border-ink focus:ring-2 focus:ring-ink/10"
                     />
                   </label>
                 ))}
 
                 <label className="block text-sm">
-                  <span className="text-[11px] tracking-[0.14em] uppercase text-muted">Category</span>
+                  <span className="mb-1.5 block text-sm font-semibold text-ink">Category</span>
                   <select
                     value={form.category}
                     onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-                    className="mt-1 w-full border-b border-line bg-transparent py-2 outline-none"
+                    className="w-full rounded-xl border border-line bg-white px-3.5 py-3 text-base text-ink outline-none transition focus:border-ink focus:ring-2 focus:ring-ink/10"
                   >
                     {["fragrance", "shoes"].map((c) => (
                       <option key={c} value={c}>
@@ -321,17 +327,18 @@ export default function ProductsPage() {
                 </label>
 
                 <label className="block text-sm sm:col-span-2">
-                  <span className="text-[11px] tracking-[0.14em] uppercase text-muted">Description</span>
+                  <span className="mb-1.5 block text-sm font-semibold text-ink">Description</span>
                   <textarea
                     value={form.description}
                     onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                    rows={3}
-                    className="mt-1 w-full border border-line bg-bg/50 p-2 outline-none"
+                    rows={4}
+                    placeholder="Write a short product description…"
+                    className="w-full rounded-xl border border-line bg-white px-3.5 py-3 text-base text-ink outline-none transition placeholder:text-muted/70 focus:border-ink focus:ring-2 focus:ring-ink/10"
                   />
                 </label>
               </div>
 
-              <div className="mt-4 flex flex-wrap gap-4 text-sm">
+              <div className="mt-5 flex flex-wrap gap-5 text-base">
                 {(
                   [
                     ["isNew", "New"],
@@ -339,11 +346,12 @@ export default function ProductsPage() {
                     ["isPublished", "Published"],
                   ] as const
                 ).map(([key, label]) => (
-                  <label key={key} className="flex items-center gap-2">
+                  <label key={key} className="flex items-center gap-2.5 font-medium text-ink">
                     <input
                       type="checkbox"
                       checked={form[key]}
                       onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.checked }))}
+                      className="h-4 w-4 accent-teal"
                     />
                     {label}
                   </label>
@@ -351,11 +359,11 @@ export default function ProductsPage() {
               </div>
 
               <div className="mt-6">
-                <p className="text-[11px] tracking-[0.14em] uppercase text-muted">Images → Cloudinary</p>
+                <p className="text-sm font-semibold text-ink">Images → Cloudinary</p>
                 {existingImages.length > 0 ? (
                   <div className="mt-3 flex flex-wrap gap-2">
                     {existingImages.map((img) => (
-                      <div key={img.url} className="relative h-20 w-16 overflow-hidden bg-line">
+                      <div key={img.url} className="relative h-20 w-16 overflow-hidden rounded-lg bg-line">
                         <Image src={img.url} alt="" fill className="object-cover" unoptimized />
                         <button
                           type="button"
@@ -370,8 +378,8 @@ export default function ProductsPage() {
                     ))}
                   </div>
                 ) : null}
-                <label className="mt-3 flex cursor-pointer items-center gap-2 border border-dashed border-line px-4 py-6 text-sm text-muted hover:border-ink">
-                  <Upload size={16} />
+                <label className="mt-3 flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-line bg-[#faf7f2] px-4 py-6 text-base text-muted transition hover:border-ink hover:text-ink">
+                  <Upload size={18} />
                   <span>
                     {files.length ? `${files.length} file(s) selected` : "Upload images (max 8, 5MB each)"}
                   </span>
@@ -386,19 +394,23 @@ export default function ProductsPage() {
               </div>
 
               {error ? (
-                <p className="mt-4 rounded-lg border border-accent/30 bg-accent/10 px-3 py-2 text-sm">
+                <p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-base text-rose-800">
                   {error}
                 </p>
               ) : null}
 
-              <div className="mt-6 flex justify-end gap-3">
-                <button type="button" onClick={() => setOpen(false)} className="px-4 py-2 text-sm">
+              <div className="mt-7 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="rounded-full px-5 py-3 text-base font-medium text-muted hover:text-ink"
+                >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="bg-ink px-5 py-2.5 text-xs tracking-[0.16em] uppercase text-panel disabled:opacity-60"
+                  className="btn-press rounded-full bg-ink px-6 py-3 text-sm font-semibold tracking-wide text-panel disabled:opacity-60"
                 >
                   {saving ? "Saving…" : "Save product"}
                 </button>
