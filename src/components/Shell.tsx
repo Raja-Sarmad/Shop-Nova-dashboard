@@ -107,7 +107,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
           <div className="ml-auto flex items-center gap-2">
             <a
-              href="http://localhost:3000"
+              href={(process.env.NEXT_PUBLIC_STORE_URL || "http://localhost:3000").replace(/\/$/, "")}
               target="_blank"
               rel="noreferrer"
               className="btn-press hidden h-10 items-center gap-2 rounded-full bg-white/10 px-3 text-xs text-white/70 hover:bg-white/15 hover:text-white sm:inline-flex"

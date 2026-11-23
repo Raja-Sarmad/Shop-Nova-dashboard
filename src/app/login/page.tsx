@@ -1,23 +1,45 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, Suspense, useEffect, useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, Lock, Shield } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
-export default function LoginPage() {
-  const { login, user, loading } = useAuth();
+function LoginForm() {
+  const { login, acceptToken, user, loading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("admin@shopnova.pk");
   const [password, setPassword] = useState("Admin@12345");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const [bridging, setBridging] = useState(false);
 
   useEffect(() => {
     if (!loading && user) router.replace("/");
   }, [loading, user, router]);
+
+  useEffect(() => {
+    const token = searchParams.get("token");
+    if (!token || loading || user) return;
+
+    let cancelled = false;
+    setBridging(true);
+    setError("");
+    acceptToken(token)
+      .catch((err) => {
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : "Could not open dashboard");
+        setBridging(false);
+        router.replace("/login");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [acceptToken, loading, router, searchParams, user]);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -128,6 +150,12 @@ export default function LoginPage() {
               </div>
             </label>
 
+            {bridging ? (
+              <p className="mt-5 rounded-xl border border-[#e4dbd0] bg-[#f7f2ea] px-4 py-3 text-sm text-[#5c554e]">
+                Opening dashboard from store login…
+              </p>
+            ) : null}
+
             {error ? (
               <p className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                 {error}
@@ -136,10 +164,10 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={pending}
+              disabled={pending || bridging}
               className="btn-press mt-7 w-full rounded-xl bg-[#12100e] py-4 text-xs tracking-[0.22em] uppercase text-white hover:bg-[#2a2420] disabled:opacity-60"
             >
-              {pending ? "Signing in…" : "Enter dashboard"}
+              {bridging ? "Opening…" : pending ? "Signing in…" : "Enter dashboard"}
             </button>
 
             <p className="mt-6 text-center text-xs text-[#7a7268]">
@@ -149,5 +177,19 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="grid min-h-screen place-items-center bg-[#0c0b0a] text-sm text-white/70">
+          Loading…
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }
