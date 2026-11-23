@@ -17,6 +17,7 @@ type Product = {
   price: number;
   compareAtPrice?: number;
   category: string;
+  gender?: "men" | "women" | "unisex";
   collection: string;
   images: string[];
   imageMeta?: { url: string; publicId: string }[];
@@ -30,6 +31,7 @@ type Product = {
 };
 
 type Category = "fragrance" | "shoes";
+type Gender = "men" | "women" | "unisex";
 type Tab = "all" | Category;
 
 type FormState = {
@@ -39,6 +41,7 @@ type FormState = {
   price: string;
   compareAtPrice: string;
   category: Category;
+  gender: Gender;
   collectionSlug: string;
   sizes: string;
   colors: string;
@@ -63,6 +66,7 @@ const perfumeDefaults: FormState = {
   price: "",
   compareAtPrice: "",
   category: "fragrance",
+  gender: "unisex",
   collectionSlug: "signature-scents",
   sizes: "50ml, 100ml",
   colors: "Amber:#C48A3A, Noir:#1A1614",
@@ -80,6 +84,7 @@ const shoesDefaults: FormState = {
   price: "",
   compareAtPrice: "",
   category: "shoes",
+  gender: "unisex",
   collectionSlug: "everyday-footwear",
   sizes: "40, 41, 42, 43, 44",
   colors: "Black:#1A1614, Brown:#6B4423",
@@ -156,6 +161,7 @@ export default function ProductsPage() {
       price: String(product.price),
       compareAtPrice: product.compareAtPrice ? String(product.compareAtPrice) : "",
       category: (product.category as Category) || "fragrance",
+      gender: product.gender || "unisex",
       collectionSlug: product.collection,
       sizes: product.sizes.join(", "),
       colors: product.colors.map((c) => `${c.name}:${c.hex}`).join(", "),
@@ -250,6 +256,7 @@ export default function ProductsPage() {
       fd.append("price", form.price);
       if (form.compareAtPrice) fd.append("compareAtPrice", form.compareAtPrice);
       fd.append("category", form.category);
+      fd.append("gender", form.gender);
       fd.append("collectionSlug", form.collectionSlug);
       fd.append("sizes", form.sizes);
       fd.append("colors", form.colors);
@@ -392,6 +399,9 @@ export default function ProductsPage() {
                   </td>
                   <td className="px-4 py-3.5 capitalize">
                     {p.category === "fragrance" ? "Perfume" : "Shoes"}
+                    <span className="mt-0.5 block text-sm capitalize text-muted">
+                      {p.gender || "unisex"}
+                    </span>
                   </td>
                   <td className="px-4 py-3.5 font-semibold">{formatPrice(p.price)}</td>
                   <td className="px-4 py-3.5">{p.stockQuantity}</td>
@@ -634,10 +644,34 @@ export default function ProductsPage() {
                       </label>
                     </div>
 
+                    <label className="mt-5 block">
+                      <span className="mb-2 block text-sm font-semibold text-ink">
+                        Gender / audience
+                      </span>
+                      <select
+                        value={form.gender}
+                        onChange={(e) =>
+                          setForm((f) => ({
+                            ...f,
+                            gender: e.target.value as Gender,
+                          }))
+                        }
+                        className="field"
+                      >
+                        <option value="men">Men — shows in Men section</option>
+                        <option value="women">Women — shows in Women section</option>
+                        <option value="unisex">Unisex — shows in both Men &amp; Women</option>
+                      </select>
+                      <p className="mt-2 text-sm text-muted">
+                        Shop shows all products. Men / Women homepage sections only
+                        list matching gender (plus unisex).
+                      </p>
+                    </label>
+
                     <div className="mt-5 flex flex-wrap gap-5 text-base">
                       {(
                         [
-                          ["isNew", "New"],
+                          ["isNew", "New arrivals"],
                           ["isBestseller", "Bestseller"],
                           ["isPublished", "Published"],
                         ] as const
@@ -655,6 +689,10 @@ export default function ProductsPage() {
                         </label>
                       ))}
                     </div>
+                    <p className="mt-2 text-sm text-muted">
+                      New / Bestseller flags control navbar dropdowns. Sale items need a
+                      compare-at (old) price higher than the selling price.
+                    </p>
 
                     <div className="mt-6">
                       <div className="flex flex-wrap items-end justify-between gap-2">
